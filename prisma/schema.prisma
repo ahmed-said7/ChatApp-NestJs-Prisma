@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id Int @id @default(autoincrement())
+  username String
+  email String @unique
+  password String
+  conversationRecipient conversation[] @relation("recipient") 
+  conversationCreated conversation[] @relation("creator")
+  conversationMessages conversationMessage[]
+  groupMessages groupMessage[]
+  groups group[]
+  admin group[] @relation("group-creator")
+  sender friend[] @relation("sender")
+  reciver friend[] @relation("reciver")
+  senderReq request[] @relation("senderReq")
+  reciverReq request[] @relation("reciverReq")
+}
+
+model conversation {
+  id Int @id @default(autoincrement())
+  name String
+  recipientId Int
+  creator user @relation( "creator" , fields : [ creatorId ] , references : [ id ] )
+  creatorId Int
+  recipient user @relation( "recipient" , fields : [ recipientId ] , references: [ id ] )
+  messages conversationMessage[] @relation("conversation")
+}
+
+model group {
+  id Int @id @default(autoincrement())
+  name String
+  creator user @relation( "group-creator" , fields : [ creatorId ] , references : [ id ] )
+  creatorId Int
+  users user[]
+  messages groupMessage[]
+}
+
+model groupMessage {
+  id Int @id @default(autoincrement())
+  content String
+  creatorId Int
+  creator user @relation(references: [id],fields: [creatorId])
+  groupId Int
+  group group  @relation(references: [id],fields: [groupId])
+  createdAt DateTime @default(now())
+}
+
+model conversationMessage {
+  id Int @id @default(autoincrement())
+  content String
+  creatorId Int
+  creator user @relation(references: [id],fields: [creatorId])
+  conversationId Int
+  conversation conversation @relation("conversation",references: [id],fields: [conversationId])
+  createdAt DateTime @default(now())
+}
+
+model session {
+  id        String   @id
+  sid       String   @unique
+  data      String
+  expiresAt   DateTime
+}
+
+model friend {
+  id Int @id @default(autoincrement())
+  senderId Int
+  recieverId Int
+  sender user @relation("sender",references: [id],fields: [senderId])
+  reciever user @relation("reciver",fields: [recieverId],references: [id])
+}
+
+enum RequestStatus {
+  blocked
+  pending
+  accepted
+}
+
+model request {
+  id Int @id @default(autoincrement())
+  senderId Int
+  recieverId Int
+  sender user @relation("senderReq",references: [id],fields: [senderId])
+  reciever user @relation("reciverReq",fields: [recieverId],references: [id])
+  status RequestStatus
+}
